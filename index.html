@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="영수증">
+<meta name="theme-color" content="#1a1a18">
+<link rel="manifest" href="manifest.json">
+<title>영수증 정리</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #f5f4f0; --surface: #fff; --border: #e4e2da; --border-strong: #cccac2;
+  --text: #1a1a18; --text-sub: #6b6960; --text-muted: #9c9a92;
+  --accent: #2563eb; --accent-bg: #eff6ff;
+  --success: #16a34a; --success-bg: #f0fdf4;
+  --radius: 14px;
+}
+body {
+  font-family: -apple-system, 'Apple SD Gothic Neo', sans-serif;
+  background: #000; color: var(--text);
+  min-height: 100vh; min-height: -webkit-fill-available;
+  overflow-x: hidden;
+}
+
+/* ── 화면 공통 ── */
+.screen { display: none; flex-direction: column; min-height: 100vh; min-height: -webkit-fill-available; }
+.screen.active { display: flex; }
+
+/* ── 상단바 ── */
+.topbar {
+  background: #000; color: #fff;
+  padding: 52px 20px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.topbar h2 { font-size: 17px; font-weight: 600; }
+.topbar-btn {
+  background: rgba(255,255,255,0.12); border: none; color: #fff;
+  border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer;
+}
+.back-btn {
+  background: none; border: none; color: #fff;
+  font-size: 15px; cursor: pointer; padding: 4px 0;
+  display: flex; align-items: center; gap: 4px;
+}
+
+/* ── 선택 화면 공통 ── */
+.select-screen { background: #000; flex: 1; display: flex; flex-direction: column; }
+.select-body {
+  flex: 1; padding: 20px 20px 40px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.step-indicator {
+  display: flex; gap: 6px; padding: 0 20px 16px;
+}
+.step-dot {
+  height: 3px; border-radius: 2px; background: rgba(255,255,255,0.2); flex: 1;
+  transition: background 0.3s;
+}
+.step-dot.done { background: #2563eb; }
+.step-dot.active { background: #fff; }
+
+.select-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 18px;
+  padding: 20px 22px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  display: flex; align-items: center; justify-content: space-between;
+  -webkit-appearance: none;
+  width: 100%;
+  text-align: left;
+}
+.select-card:active { background: rgba(255,255,255,0.12); }
+.select-card.selected {
+  background: rgba(37,99,235,0.25);
+  border-color: #2563eb;
+}
+.select-card-inner { flex: 1; }
+.select-card-title { font-size: 17px; font-weight: 600; color: #fff; margin-bottom: 3px; }
+.select-card-sub { font-size: 13px; color: rgba(255,255,255,0.5); }
+.select-card-arrow { font-size: 18px; color: rgba(255,255,255,0.3); }
+.select-card.selected .select-card-arrow { color: #2563eb; }
+
+.section-label {
+  font-size: 12px; font-weight: 600;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0 4px;
+  margin-bottom: -4px;
+}
+
+/* ── 메모 화면 ── */
+.memo-screen { background: #000; flex: 1; display: flex; flex-direction: column; }
+.memo-body { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.memo-context {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 14px 16px;
+}
+.memo-context-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+.memo-context-row:last-child { margin-bottom: 0; }
+.ctx-label { font-size: 11px; color: rgba(255,255,255,0.35); width: 56px; flex-shrink: 0; }
+.ctx-value { font-size: 13px; color: rgba(255,255,255,0.8); font-weight: 500; }
+.ctx-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+.badge-part4 { background: #1e3a5f; color: #60a5fa; }
+.badge-part5 { background: #1a3328; color: #34d399; }
+.badge-plan { background: #2d1f4e; color: #a78bfa; }
+.badge-shoot { background: #3b1f1a; color: #f87171; }
+.badge-country { background: #2d2a1a; color: #fbbf24; }
+
+.memo-label { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); }
+.memo-input-wrap { position: relative; }
+.memo-input {
+  width: 100%; background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px; padding: 14px 16px;
+  font-size: 16px; color: #fff; font-family: -apple-system, sans-serif;
+  outline: none; resize: none;
+  -webkit-appearance: none;
+}
+.memo-input::placeholder { color: rgba(255,255,255,0.25); }
+.memo-input:focus { border-color: rgba(37,99,235,0.7); }
+.memo-count { position: absolute; bottom: 10px; right: 14px; font-size: 12px; color: rgba(255,255,255,0.3); }
+.memo-count.warn { color: #f87171; }
+.memo-next {
+  width: 100%; padding: 15px; background: #2563eb; color: #fff;
+  border: none; border-radius: var(--radius); font-size: 16px; font-weight: 700;
+  cursor: pointer; -webkit-appearance: none; margin-top: auto;
+}
+.memo-next:active { opacity: 0.85; }
+.memo-skip {
+  width: 100%; padding: 12px; background: none; color: rgba(255,255,255,0.35);
+  border: none; font-size: 14px; cursor: pointer; -webkit-appearance: none;
+}
+
+/* ── 카메라 화면 ── */
+.cam-screen { background: #000; flex: 1; display: flex; flex-direction: column; }
+.cam-context-bar {
+  background: rgba(0,0,0,0.9); padding: 8px 20px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.preview-area {
+  flex: 1; background: #111; display: flex; align-items: center;
+  justify-content: center; flex-direction: column; gap: 10px;
+  position: relative; overflow: hidden; min-height: 300px;
+}
+.viewfinder-corner {
+  position: absolute; width: 24px; height: 24px;
+  border-color: rgba(255,255,255,0.5); border-style: solid;
+}
+.vf-tl { top: 20px; left: 20px; border-width: 2px 0 0 2px; border-radius: 4px 0 0 0; }
+.vf-tr { top: 20px; right: 20px; border-width: 2px 2px 0 0; border-radius: 0 4px 0 0; }
+.vf-bl { bottom: 20px; left: 20px; border-width: 0 0 2px 2px; border-radius: 0 0 0 4px; }
+.vf-br { bottom: 20px; right: 20px; border-width: 0 2px 2px 0; border-radius: 0 0 4px 0; }
+.cam-hint-text { color: rgba(255,255,255,0.35); font-size: 13px; text-align: center; line-height: 1.6; }
+#preview-img { width: 100%; height: 100%; object-fit: contain; display: none; }
+.analyzing-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.75);
+  display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+}
+.analyzing-overlay.show { display: flex; }
+.spinner {
+  width: 44px; height: 44px;
+  border: 3px solid rgba(255,255,255,0.15);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.analyzing-overlay p { color: #fff; font-size: 15px; font-weight: 500; }
+.cam-footer { background: #000; padding: 16px 20px 36px; flex-shrink: 0; }
+.cam-controls { display: flex; align-items: center; justify-content: center; gap: 32px; }
+.side-btn {
+  width: 48px; height: 48px; border-radius: 12px;
+  border: 2px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: #fff; font-size: 20px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; -webkit-appearance: none;
+}
+.side-btn:active { background: rgba(255,255,255,0.18); }
+.shutter-btn {
+  width: 68px; height: 68px; border-radius: 50%;
+  border: 4px solid #fff; background: #fff;
+  font-size: 28px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-appearance: none; transition: transform 0.1s;
+}
+.shutter-btn:active { transform: scale(0.92); }
+.send-btn-cam {
+  width: 100%; padding: 15px; background: #2563eb; color: #fff;
+  border: none; border-radius: var(--radius); font-size: 17px; font-weight: 700;
+  cursor: pointer; -webkit-appearance: none; margin-bottom: 10px;
+}
+.send-btn-cam:active { opacity: 0.85; }
+.retake-btn-cam {
+  width: 100%; padding: 11px; background: none; color: rgba(255,255,255,0.4);
+  border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius);
+  font-size: 14px; cursor: pointer; -webkit-appearance: none;
+}
+.no-receipt-btn {
+  width: 100%; padding: 13px; background: none; color: rgba(255,120,100,0.75);
+  border: 1px solid rgba(255,120,100,0.3); border-radius: var(--radius);
+  font-size: 14px; font-weight: 500; cursor: pointer; -webkit-appearance: none; margin-top: 10px;
+}
+.no-receipt-btn:active { background: rgba(255,100,80,0.1); }
+
+/* ── 영수증 없음 입력 폼 ── */
+.nr-field-label {
+  font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.6);
+  margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+}
+.nr-optional {
+  font-size: 11px; font-weight: 400; color: rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.06); border-radius: 4px; padding: 1px 6px;
+}
+.nr-field-input {
+  width: 100%; padding: 13px 14px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px; font-size: 15px; color: #fff;
+  font-family: -apple-system, sans-serif;
+  outline: none; -webkit-appearance: none;
+  transition: border-color 0.15s;
+}
+.nr-field-input:focus { border-color: rgba(37,99,235,0.7); background: rgba(37,99,235,0.08); }
+.nr-field-input::placeholder { color: rgba(255,255,255,0.2); }
+input[type="date"].nr-field-input { color-scheme: dark; }
+
+/* ── 결과 화면 ── */
+.result-screen { background: var(--surface); flex: 1; display: flex; flex-direction: column; }
+.result-topbar {
+  background: var(--surface); padding: 52px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.result-topbar h2 { font-size: 20px; font-weight: 700; }
+.result-topbar p { font-size: 13px; color: var(--text-sub); margin-top: 3px; }
+.result-body { flex: 1; padding: 16px 16px 0; overflow-y: auto; }
+.result-card {
+  border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px;
+}
+.result-row {
+  display: flex; align-items: flex-start; padding: 12px 16px;
+  border-bottom: 1px solid var(--border); gap: 12px;
+}
+.result-row:last-child { border-bottom: none; }
+.r-label { font-size: 12px; color: var(--text-muted); width: 72px; flex-shrink: 0; padding-top: 2px; }
+.r-value { font-size: 14px; color: var(--text); font-weight: 500; flex: 1; line-height: 1.5; }
+.r-value.amount-main { font-size: 20px; font-weight: 700; color: var(--accent); }
+.r-value.amount-sub { font-size: 13px; color: var(--text-sub); font-weight: 400; margin-top: 2px; }
+.r-trans { font-size: 12px; color: var(--text-sub); font-weight: 400; margin-top: 2px; }
+
+.success-bar {
+  margin: 0 16px 14px;
+  background: var(--success-bg); border: 1px solid #bbf7d0;
+  border-radius: 10px; padding: 12px 16px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 14px; color: var(--success); font-weight: 500;
+}
+.result-actions { padding: 8px 16px 40px; display: flex; flex-direction: column; gap: 10px; }
+.btn-next-receipt {
+  width: 100%; padding: 15px; background: #000; color: #fff;
+  border: none; border-radius: var(--radius); font-size: 16px; font-weight: 600;
+  cursor: pointer; -webkit-appearance: none;
+}
+.btn-next-receipt:active { opacity: 0.8; }
+.btn-view-sheet {
+  width: 100%; padding: 13px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 14px; font-weight: 500; cursor: pointer; -webkit-appearance: none;
+  color: var(--text);
+}
+
+/* ── 설정 화면 ── */
+.setup-screen {
+  background: var(--surface); flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 2rem 1.5rem;
+}
+.setup-inner { width: 100%; max-width: 360px; }
+.setup-logo { text-align: center; margin-bottom: 2rem; }
+.setup-app-icon {
+  width: 76px; height: 76px; border-radius: 20px; background: #000;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 14px; font-size: 38px;
+}
+.setup-logo h1 { font-size: 22px; font-weight: 700; }
+.setup-logo p { font-size: 14px; color: var(--text-sub); margin-top: 4px; line-height: 1.6; }
+.setup-field { margin-bottom: 1.25rem; }
+.setup-field label { display: block; font-size: 13px; font-weight: 600; color: var(--text-sub); margin-bottom: 6px; }
+.setup-field input {
+  width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+  border-radius: 10px; font-size: 14px; color: var(--text); background: var(--bg);
+  outline: none; -webkit-appearance: none; transition: border-color 0.15s;
+}
+.setup-field input:focus { border-color: var(--accent); background: #fff; }
+.setup-field .hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.6; }
+.setup-start {
+  width: 100%; padding: 15px; background: #000; color: #fff;
+  border: none; border-radius: var(--radius); font-size: 16px; font-weight: 700;
+  cursor: pointer; -webkit-appearance: none;
+}
+.setup-start:active { opacity: 0.8; }
+
+#fileInput { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ 설정 화면 ═══════════════════════════════ -->
+<div class="screen active" id="s-setup">
+  <div class="setup-screen">
+    <div class="setup-inner">
+      <div class="setup-logo">
+        <div class="setup-app-icon">🧾</div>
+        <h1>영수증 정리</h1>
+        <p>4부 국내편 · 5부 해외편<br>찍으면 구글 시트에 자동 저장</p>
+      </div>
+      <div class="setup-field">
+        <label>Apps Script 웹앱 URL</label>
+        <input type="url" id="urlInput" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" autocorrect="off" spellcheck="false">
+        <div class="hint">구글 시트 → 확장 프로그램 → Apps Script → 배포 → 웹앱 URL 복사</div>
+      </div>
+      <button class="setup-start" onclick="saveSetup()">시작하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ STEP 1: 부 선택 ═══════════════════════════════ -->
+<div class="screen" id="s-part">
+  <div class="select-screen">
+    <div class="topbar">
+      <h2>🧾 영수증 정리</h2>
+      <button class="topbar-btn" onclick="goSetup()">설정</button>
+    </div>
+    <div class="step-indicator">
+      <div class="step-dot active" id="dot1-1"></div>
+      <div class="step-dot" id="dot1-2"></div>
+      <div class="step-dot" id="dot1-3"></div>
+      <div class="step-dot" id="dot1-4"></div>
+    </div>
+    <div class="select-body">
+      <div class="section-label">편 선택</div>
+      <button class="select-card" onclick="selectPart('4부 국내편')">
+        <div class="select-card-inner">
+          <div class="select-card-title">4부 국내편</div>
+          <div class="select-card-sub">국내 촬영 영수증</div>
+        </div>
+        <div class="select-card-arrow">›</div>
+      </button>
+      <button class="select-card" onclick="selectPart('5부 해외편')">
+        <div class="select-card-inner">
+          <div class="select-card-title">5부 해외편</div>
+          <div class="select-card-sub">해외 촬영 영수증</div>
+        </div>
+        <div class="select-card-arrow">›</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ STEP 2: 항목 선택 ═══════════════════════════════ -->
+<div class="screen" id="s-item">
+  <div class="select-screen">
+    <div class="topbar">
+      <button class="back-btn" onclick="goBack('s-part')">‹ 뒤로</button>
+      <h2 id="item-title">항목 선택</h2>
+      <div style="width:48px"></div>
+    </div>
+    <div class="step-indicator">
+      <div class="step-dot done"></div>
+      <div class="step-dot active"></div>
+      <div class="step-dot" id="dot2-3"></div>
+      <div class="step-dot" id="dot2-4"></div>
+    </div>
+    <div class="select-body">
+      <div class="section-label">항목 선택</div>
+      <button class="select-card" onclick="selectItem('기획진행비')">
+        <div class="select-card-inner">
+          <div class="select-card-title">기획진행비</div>
+          <div class="select-card-sub">바로 촬영으로 이동</div>
+        </div>
+        <div class="select-card-arrow">›</div>
+      </button>
+      <button class="select-card" onclick="selectItem('촬영진행비')">
+        <div class="select-card-inner">
+          <div class="select-card-title">촬영진행비</div>
+          <div class="select-card-sub" id="shoot-sub">국가 선택 후 촬영</div>
+        </div>
+        <div class="select-card-arrow">›</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ STEP 3: 국가 선택 (5부만) ═══════════════════════════════ -->
+<div class="screen" id="s-country">
+  <div class="select-screen">
+    <div class="topbar">
+      <button class="back-btn" onclick="goBack('s-item')">‹ 뒤로</button>
+      <h2>국가 선택</h2>
+      <div style="width:48px"></div>
+    </div>
+    <div class="step-indicator">
+      <div class="step-dot done"></div>
+      <div class="step-dot done"></div>
+      <div class="step-dot active"></div>
+      <div class="step-dot"></div>
+    </div>
+    <div class="select-body">
+      <div class="section-label">촬영 국가</div>
+      <button class="select-card" onclick="selectCountry('오스트리아')">
+        <div class="select-card-inner">
+          <div class="select-card-title">🇦🇹 오스트리아</div>
+          <div class="select-card-sub">Austria · EUR · 독일어</div>
+        </div>
+        <div class="select-card-arrow">›</div>
+      </button>
+      <button class="select-card" onclick="selectCountry('덴마크')">
+        <div class="select-card-inner">
+          <div class="select-card-title">🇩🇰 덴마크</div>
+          <div class="select-card-sub">Denmark · DKK · 덴마크어</div>
+        </div>
+        <div class="select-card-arrow">›</div>
+      </button>
+      <button class="select-card" onclick="selectCountry('영국')">
+        <div class="select-card-inner">
+          <div class="select-card-title">🇬🇧 영국</div>
+          <div class="select-card-sub">United Kingdom · GBP · 영어</div>
+        </div>
+        <div class="select-card-arrow">›</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ STEP 4: 메모 ═══════════════════════════════ -->
+<div class="screen" id="s-memo">
+  <div class="select-screen">
+    <div class="topbar">
+      <button class="back-btn" id="memo-back-btn" onclick="memoBack()">‹ 뒤로</button>
+      <h2>메모</h2>
+      <div style="width:48px"></div>
+    </div>
+    <div class="step-indicator">
+      <div class="step-dot done"></div>
+      <div class="step-dot done"></div>
+      <div class="step-dot done" id="memo-dot3"></div>
+      <div class="step-dot active"></div>
+    </div>
+    <div style="flex:1; padding: 16px 20px 32px; display:flex; flex-direction:column; gap:16px;">
+      <div class="memo-context" id="memo-context-box"></div>
+      <div style="color: rgba(255,255,255,0.7); font-size:14px; font-weight:500;">메모 <span style="color:rgba(255,255,255,0.3); font-weight:400;">(선택사항)</span></div>
+      <div class="memo-input-wrap">
+        <textarea class="memo-input" id="memoText" rows="3" maxlength="20"
+          placeholder="20자 이내로 간단히 메모하세요"
+          oninput="updateCount()"></textarea>
+        <span class="memo-count" id="memoCount">0/20</span>
+      </div>
+      <button class="memo-next" onclick="goCamera()">📷 영수증 촬영하기</button>
+      <button class="memo-skip" onclick="skipMemo()">메모 없이 바로 촬영</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ STEP 5: 카메라 ═══════════════════════════════ -->
+<div class="screen" id="s-camera">
+  <div class="cam-screen">
+    <div class="topbar">
+      <button class="back-btn" onclick="goBack('s-memo')">‹ 뒤로</button>
+      <h2>영수증 촬영</h2>
+      <div style="width:48px"></div>
+    </div>
+    <div class="cam-context-bar" id="cam-context-bar"></div>
+    <div class="preview-area">
+      <div class="viewfinder-corner vf-tl"></div>
+      <div class="viewfinder-corner vf-tr"></div>
+      <div class="viewfinder-corner vf-bl"></div>
+      <div class="viewfinder-corner vf-br"></div>
+      <div id="cam-placeholder" style="text-align:center">
+        <div style="font-size:48px; margin-bottom:10px; opacity:0.25">🧾</div>
+        <div class="cam-hint-text">영수증을 네모 안에 맞추고<br>아래 버튼을 눌러 촬영하세요</div>
+      </div>
+      <img id="preview-img" alt="영수증 미리보기">
+      <div class="analyzing-overlay" id="analyzing">
+        <div class="spinner"></div>
+        <p id="analyzing-text">AI가 영수증 읽는 중...</p>
+      </div>
+    </div>
+    <div class="cam-footer">
+      <div id="shoot-controls" class="cam-controls">
+        <button class="side-btn" onclick="openGallery()" title="갤러리">🖼</button>
+        <button class="shutter-btn" onclick="openCamera()">📷</button>
+        <div style="width:48px"></div>
+      </div>
+      <div id="send-controls" style="display:none">
+        <button class="send-btn-cam" onclick="sendReceipt()">구글 시트에 저장 →</button>
+        <button class="retake-btn-cam" onclick="retake()">↩ 다시 찍기</button>
+      </div>
+      <button class="no-receipt-btn" onclick="show('s-no-receipt')">🚫 영수증 없음</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ 영수증 없음 — 사유 선택 ═══════════════════════════════ -->
+<div class="screen" id="s-no-receipt">
+  <div class="select-screen">
+    <div class="topbar">
+      <button class="back-btn" onclick="show('s-camera')">‹ 뒤로</button>
+      <h2>영수증 없음</h2>
+      <div style="width:48px"></div>
+    </div>
+    <div class="select-body">
+      <div class="section-label">사유 선택</div>
+      <button class="select-card" onclick="goNoReceiptForm('분실')">
+        <div class="select-card-inner">
+          <div class="select-card-title">😓 분실</div>
+          <div class="select-card-sub">영수증을 잃어버린 경우</div>
+        </div>
+        <div class="select-card-arrow">›</div>
+      </button>
+      <button class="select-card" onclick="goNoReceiptForm('미발급')">
+        <div class="select-card-inner">
+          <div class="select-card-title">🙅 미발급</div>
+          <div class="select-card-sub">영수증을 받지 못한 경우</div>
+        </div>
+        <div class="select-card-arrow">›</div>
+      </button>
+      <button class="select-card" onclick="goNoReceiptForm('간이영수증')">
+        <div class="select-card-inner">
+          <div class="select-card-title">📝 간이영수증</div>
+          <div class="select-card-sub">정식 영수증 없이 수기 처리</div>
+        </div>
+        <div class="select-card-arrow">›</div>
+      </button>
+      <button class="select-card" onclick="goNoReceiptForm('기타')">
+        <div class="select-card-inner">
+          <div class="select-card-title">📦 기타</div>
+          <div class="select-card-sub">그 외 사유</div>
+        </div>
+        <div class="select-card-arrow">›</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ 영수증 없음 — 직접 입력 ═══════════════════════════════ -->
+<div class="screen" id="s-no-receipt-form">
+  <div class="select-screen">
+    <div class="topbar">
+      <button class="back-btn" onclick="show('s-no-receipt')">‹ 뒤로</button>
+      <h2>내용 직접 입력</h2>
+      <div style="width:48px"></div>
+    </div>
+    <div style="flex:1; padding:16px 20px 32px; overflow-y:auto; display:flex; flex-direction:column; gap:14px;">
+
+      <!-- 컨텍스트 뱃지 -->
+      <div class="memo-context" id="nr-form-context"></div>
+
+      <!-- 날짜 -->
+      <div>
+        <div class="nr-field-label">날짜</div>
+        <input type="date" id="nr-date" class="nr-field-input">
+      </div>
+
+      <!-- 사용처 -->
+      <div>
+        <div class="nr-field-label">사용처 <span class="nr-optional">필수</span></div>
+        <input type="text" id="nr-store" class="nr-field-input" placeholder="예) 마트, 택시, 식당 이름">
+      </div>
+
+      <!-- 품목 -->
+      <div>
+        <div class="nr-field-label">품목 <span class="nr-optional">선택</span></div>
+        <input type="text" id="nr-items" class="nr-field-input" placeholder="예) 식사, 교통비, 숙박">
+      </div>
+
+      <!-- 금액 -->
+      <div>
+        <div class="nr-field-label">금액 <span class="nr-optional" id="nr-currency-label">KRW</span></div>
+        <input type="number" id="nr-amount" class="nr-field-input" placeholder="숫자만 입력" inputmode="decimal">
+      </div>
+
+      <!-- 원화 환산 (해외일 때만) -->
+      <div id="nr-krw-row" style="display:none">
+        <div class="nr-field-label">원화 환산 <span class="nr-optional">직접 입력 또는 자동계산</span></div>
+        <input type="number" id="nr-krw" class="nr-field-input" placeholder="₩ 원화 금액" inputmode="decimal">
+        <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px">비워두면 저장 시 실시간 환율 자동 적용</div>
+      </div>
+
+      <!-- 메모 -->
+      <div>
+        <div class="nr-field-label">메모 <span class="nr-optional">20자 이내</span></div>
+        <div style="position:relative">
+          <input type="text" id="nr-memo" class="nr-field-input" placeholder="간단한 메모" maxlength="20" oninput="updateNrCount()">
+          <span id="nr-memo-count" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11px;color:rgba(255,255,255,0.25);">0/20</span>
+        </div>
+      </div>
+
+      <button class="memo-next" style="margin-top:8px;" onclick="submitNoReceiptForm()">구글 시트에 저장 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ 결과 화면 ═══════════════════════════════ -->
+<div class="screen" id="s-result">
+  <div class="result-screen">
+    <div class="result-topbar">
+      <h2>저장 완료 ✓</h2>
+      <p>구글 시트에 기록됐습니다</p>
+    </div>
+    <div class="result-body">
+      <div class="success-bar">✅ 구글 시트에 한 줄 추가됐어요</div>
+      <div class="result-card" id="result-card"></div>
+    </div>
+    <div class="result-actions">
+      <button class="btn-next-receipt" onclick="nextReceipt()">📷 다음 영수증 찍기</button>
+      <button class="btn-view-sheet" onclick="openSheet()">📊 구글 시트 열기</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept="image/*">
+
+<script>
+// ── 상태 ──
+let SCRIPT_URL = localStorage.getItem('rcpt_url2') || '';
+let state = { part: '', item: '', country: '', memo: '' };
+let imageB64 = null, imageMime = 'image/jpeg';
+
+// ── 화면 전환 ──
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+function goBack(id) { show(id); }
+
+// ── 설정 ──
+function saveSetup() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url.startsWith('https://script.google.com')) {
+    alert('올바른 Apps Script URL을 입력해주세요.\nhttps://script.google.com 으로 시작해야 합니다.');
+    return;
+  }
+  SCRIPT_URL = url;
+  localStorage.setItem('rcpt_url2', url);
+  resetState();
+  show('s-part');
+}
+function goSetup() {
+  if (confirm('설정 화면으로 이동할까요?')) {
+    document.getElementById('urlInput').value = SCRIPT_URL;
+    show('s-setup');
+  }
+}
+
+// ── STEP 1: 부 선택 ──
+function selectPart(part) {
+  state = { part, item: '', country: '', memo: '' };
+  document.getElementById('item-title').textContent = part;
+  const is5 = part === '5부 해외편';
+  document.getElementById('shoot-sub').textContent = is5 ? '국가 선택 후 촬영' : '바로 촬영으로 이동';
+  show('s-item');
+}
+
+// ── STEP 2: 항목 선택 ──
+function selectItem(item) {
+  state.item = item;
+  const is5 = state.part === '5부 해외편';
+  if (item === '촬영진행비' && is5) {
+    show('s-country');
+  } else {
+    state.country = '';
+    updateMemoContext();
+    show('s-memo');
+  }
+}
+
+// ── STEP 3: 국가 선택 ──
+function selectCountry(country) {
+  state.country = country;
+  updateMemoContext();
+  show('s-memo');
+}
+
+// ── STEP 4: 메모 ──
+function updateMemoContext() {
+  const box = document.getElementById('memo-context-box');
+  const partBadge = state.part === '4부 국내편'
+    ? `<span class="ctx-badge badge-part4">${state.part}</span>`
+    : `<span class="ctx-badge badge-part5">${state.part}</span>`;
+  const itemBadge = state.item === '기획진행비'
+    ? `<span class="ctx-badge badge-plan">${state.item}</span>`
+    : `<span class="ctx-badge badge-shoot">${state.item}</span>`;
+  const countryRow = state.country
+    ? `<div class="memo-context-row"><span class="ctx-label">국가</span><span class="ctx-badge badge-country">${state.country}</span></div>` : '';
+  box.innerHTML = `
+    <div class="memo-context-row"><span class="ctx-label">편</span>${partBadge}</div>
+    <div class="memo-context-row"><span class="ctx-label">항목</span>${itemBadge}</div>
+    ${countryRow}
+  `;
+  document.getElementById('memoText').value = '';
+  document.getElementById('memoCount').textContent = '0/20';
+}
+function updateCount() {
+  const t = document.getElementById('memoText').value;
+  const c = document.getElementById('memoCount');
+  c.textContent = t.length + '/20';
+  c.className = 'memo-count' + (t.length >= 18 ? ' warn' : '');
+}
+function memoBack() {
+  const is5shoot = state.part === '5부 해외편' && state.item === '촬영진행비';
+  goBack(is5shoot ? 's-country' : 's-item');
+}
+function goCamera() {
+  state.memo = document.getElementById('memoText').value.trim();
+  updateCamContext();
+  show('s-camera');
+}
+function skipMemo() {
+  state.memo = '';
+  updateCamContext();
+  show('s-camera');
+}
+
+// ── STEP 5: 카메라 ──
+function updateCamContext() {
+  const bar = document.getElementById('cam-context-bar');
+  const countryChip = state.country ? `<span class="ctx-badge badge-country" style="font-size:12px;padding:3px 8px;">${state.country}</span>` : '';
+  const memoChip = state.memo ? `<span style="font-size:12px;color:rgba(255,255,255,0.45);">✏️ ${state.memo}</span>` : '';
+  const partBadge = state.part === '4부 국내편'
+    ? `<span class="ctx-badge badge-part4" style="font-size:12px;padding:3px 8px;">${state.part}</span>`
+    : `<span class="ctx-badge badge-part5" style="font-size:12px;padding:3px 8px;">${state.part}</span>`;
+  const itemBadge = state.item === '기획진행비'
+    ? `<span class="ctx-badge badge-plan" style="font-size:12px;padding:3px 8px;">${state.item}</span>`
+    : `<span class="ctx-badge badge-shoot" style="font-size:12px;padding:3px 8px;">${state.item}</span>`;
+  bar.innerHTML = `${partBadge}${itemBadge}${countryChip}${memoChip}`;
+}
+function openCamera() {
+  const fi = document.getElementById('fileInput');
+  fi.setAttribute('capture', 'environment');
+  fi.click();
+}
+function openGallery() {
+  const fi = document.getElementById('fileInput');
+  fi.removeAttribute('capture');
+  fi.click();
+}
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  imageMime = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    imageB64 = ev.target.result.split(',')[1];
+    const img = document.getElementById('preview-img');
+    img.src = ev.target.result;
+    img.style.display = 'block';
+    document.getElementById('cam-placeholder').style.display = 'none';
+    document.getElementById('shoot-controls').style.display = 'none';
+    document.getElementById('send-controls').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+});
+function retake() {
+  imageB64 = null;
+  document.getElementById('preview-img').style.display = 'none';
+  document.getElementById('cam-placeholder').style.display = 'block';
+  document.getElementById('shoot-controls').style.display = 'flex';
+  document.getElementById('send-controls').style.display = 'none';
+}
+
+// ── 전송 ──
+async function sendReceipt() {
+  if (!imageB64) return;
+  const overlay = document.getElementById('analyzing');
+  const txt = document.getElementById('analyzing-text');
+  overlay.classList.add('show');
+  txt.textContent = 'AI가 영수증 읽는 중...';
+  try {
+    txt.textContent = '번역 및 환율 계산 중...';
+    const res1 = await callScript({ action: 'analyze', imageBase64: imageB64, mimeType: imageMime, country: state.country });
+    txt.textContent = '구글 시트에 저장 중...';
+    const res2 = await callScript({ action: 'save', receipt: { ...res1.data, ...state } });
+    overlay.classList.remove('show');
+    showResult({ ...res1.data, ...state });
+  } catch(e) {
+    overlay.classList.remove('show');
+    alert('오류: ' + (e.message || '다시 시도해주세요'));
+  }
+}
+
+async function callScript(body) {
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || '서버 오류');
+  return data;
+}
+
+// ── 결과 ──
+function showResult(r) {
+  const card = document.getElementById('result-card');
+  const isNoReceipt = r.noReceipt === true;
+
+  const partBadge = r.part === '4부 국내편'
+    ? `<span class="ctx-badge badge-part4">${r.part}</span>`
+    : `<span class="ctx-badge badge-part5">${r.part}</span>`;
+  const itemBadge = r.item === '기획진행비'
+    ? `<span class="ctx-badge badge-plan">${r.item}</span>`
+    : `<span class="ctx-badge badge-shoot">${r.item}</span>`;
+  const countryRow = r.country ? `
+    <div class="result-row">
+      <span class="r-label">국가</span>
+      <span class="r-value"><span class="ctx-badge badge-country">${r.country}</span></span>
+    </div>` : '';
+  const memoRow = r.memo ? `
+    <div class="result-row">
+      <span class="r-label">메모</span>
+      <span class="r-value">${r.memo}</span>
+    </div>` : '';
+
+  let amountHtml = '';
+  if (isNoReceipt) {
+    amountHtml = `<div class="result-row">
+      <span class="r-label">금액</span>
+      <span class="r-value" style="color:#9c9a92">0 (영수증 없음 · ${r.noReceiptReason})</span>
+    </div>`;
+  } else {
+    const storeOrig = r.storeOrig || r.store || '—';
+    const storeTrans = r.storeTrans && r.storeTrans !== storeOrig ? r.storeTrans : '';
+    const itemsOrig = r.itemsOrig || r.items || '—';
+    const itemsTrans = r.itemsTrans && r.itemsTrans !== itemsOrig ? r.itemsTrans : '';
+    const amountLocal = r.amountLocal ? `${Number(r.amountLocal).toLocaleString()} ${r.currency || ''}` : '';
+    const amountKRW = r.amountKRW && r.currency !== 'KRW' ? `≈ ₩${Math.round(r.amountKRW).toLocaleString('ko-KR')}` : (r.amountKRW ? `₩${Math.round(r.amountKRW).toLocaleString('ko-KR')}` : '');
+    amountHtml = `
+      <div class="result-row">
+        <span class="r-label">사용처</span>
+        <div class="r-value">
+          <div>${storeOrig}</div>
+          ${storeTrans ? `<div class="r-trans">→ ${storeTrans}</div>` : ''}
+        </div>
+      </div>
+      <div class="result-row">
+        <span class="r-label">품목</span>
+        <div class="r-value">
+          <div>${itemsOrig}</div>
+          ${itemsTrans ? `<div class="r-trans">→ ${itemsTrans}</div>` : ''}
+        </div>
+      </div>
+      <div class="result-row">
+        <span class="r-label">금액</span>
+        <div class="r-value">
+          <div class="amount-main">${amountLocal}</div>
+          ${amountKRW ? `<div class="amount-sub">${amountKRW}</div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  // 결과 헤더 업데이트
+  document.querySelector('.result-topbar h2').textContent = isNoReceipt ? '기록 완료 ✓' : '저장 완료 ✓';
+  document.querySelector('.result-topbar p').textContent = isNoReceipt ? '영수증 없음으로 기록됐습니다' : '구글 시트에 기록됐습니다';
+  document.querySelector('.success-bar').textContent = isNoReceipt ? '🚫 영수증 없음으로 시트에 추가됐어요' : '✅ 구글 시트에 한 줄 추가됐어요';
+
+  card.innerHTML = `
+    <div class="result-row">
+      <span class="r-label">날짜</span>
+      <span class="r-value">${r.date || '—'}</span>
+    </div>
+    <div class="result-row">
+      <span class="r-label">편·항목</span>
+      <span class="r-value" style="display:flex;gap:6px;flex-wrap:wrap">${partBadge}${itemBadge}</span>
+    </div>
+    ${countryRow}
+    ${amountHtml}
+    ${memoRow}
+  `;
+  show('s-result');
+}
+
+function nextReceipt() {
+  retake();
+  state = { part: '', item: '', country: '', memo: '' };
+  show('s-part');
+}
+function openSheet() { window.open('https://docs.google.com/spreadsheets', '_blank'); }
+function resetState() { state = { part:'', item:'', country:'', memo:'' }; imageB64 = null; }
+
+// ── 영수증 없음 ──
+let noReceiptReason = '';
+
+function goNoReceiptForm(reason) {
+  noReceiptReason = reason;
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('nr-date').value = today;
+  document.getElementById('nr-store').value = '';
+  document.getElementById('nr-items').value = '';
+  document.getElementById('nr-amount').value = '';
+  document.getElementById('nr-krw').value = '';
+  document.getElementById('nr-memo').value = '';
+  document.getElementById('nr-memo-count').textContent = '0/20';
+
+  // 해외편 촬영진행비일 때 통화·원화 행 표시
+  const currency = state.country ? (COUNTRY_CURRENCY[state.country] || 'KRW') : 'KRW';
+  document.getElementById('nr-currency-label').textContent = currency;
+  document.getElementById('nr-krw-row').style.display = (currency !== 'KRW') ? 'block' : 'none';
+
+  // 컨텍스트 뱃지
+  const ctx = document.getElementById('nr-form-context');
+  const partBadge = state.part === '4부 국내편'
+    ? `<span class="ctx-badge badge-part4">${state.part}</span>`
+    : `<span class="ctx-badge badge-part5">${state.part}</span>`;
+  const itemBadge = state.item === '기획진행비'
+    ? `<span class="ctx-badge badge-plan">${state.item}</span>`
+    : `<span class="ctx-badge badge-shoot">${state.item}</span>`;
+  const countryChip = state.country ? `<span class="ctx-badge badge-country">${state.country}</span>` : '';
+  const reasonChip = `<span style="font-size:12px;color:rgba(255,160,100,0.8);background:rgba(255,120,60,0.15);padding:2px 8px;border-radius:20px;font-weight:500;">🚫 ${reason}</span>`;
+  ctx.innerHTML = `<div class="memo-context-row" style="flex-wrap:wrap;gap:6px;">${partBadge}${itemBadge}${countryChip}${reasonChip}</div>`;
+
+  show('s-no-receipt-form');
+}
+
+function updateNrCount() {
+  const len = document.getElementById('nr-memo').value.length;
+  document.getElementById('nr-memo-count').textContent = len + '/20';
+}
+
+async function submitNoReceiptForm() {
+  const store = document.getElementById('nr-store').value.trim();
+  if (!store) { alert('사용처를 입력해 주세요.'); document.getElementById('nr-store').focus(); return; }
+
+  const currency = state.country ? (COUNTRY_CURRENCY[state.country] || 'KRW') : 'KRW';
+  const amountLocal = parseFloat(document.getElementById('nr-amount').value) || 0;
+  const amountKRWInput = parseFloat(document.getElementById('nr-krw').value) || 0;
+
+  const overlay = document.getElementById('analyzing');
+  const txt = document.getElementById('analyzing-text');
+  show('s-camera');
+  overlay.classList.add('show');
+  txt.textContent = '구글 시트에 저장 중...';
+
+  let amountKRW = amountKRWInput;
+  // 원화 미입력 + 해외 통화이면 환율 자동 적용 요청
+  if (currency !== 'KRW' && amountLocal > 0 && !amountKRWInput) {
+    txt.textContent = '환율 계산 중...';
+    try {
+      const rateRes = await callScript({ action: 'getRate', currency });
+      amountKRW = Math.round(amountLocal * (rateRes.data.rate || 1));
+    } catch(e) { amountKRW = 0; }
+  } else if (currency === 'KRW') {
+    amountKRW = amountLocal;
+  }
+
+  const noReceiptData = {
+    date: document.getElementById('nr-date').value || new Date().toISOString().slice(0,10),
+    part: state.part,
+    item: state.item,
+    country: state.country || '',
+    memo: document.getElementById('nr-memo').value.trim(),
+    storeOrig: store,
+    storeTrans: store,
+    itemsOrig: document.getElementById('nr-items').value.trim() || noReceiptReason,
+    itemsTrans: document.getElementById('nr-items').value.trim() || noReceiptReason,
+    amountLocal,
+    currency,
+    amountKRW,
+    exchangeRate: amountLocal > 0 && amountKRW > 0 ? Math.round(amountKRW / amountLocal) : 1,
+    lang: '직접입력',
+    noReceipt: true,
+    noReceiptReason
+  };
+
+  try {
+    await callScript({ action: 'save', receipt: noReceiptData });
+    overlay.classList.remove('show');
+    showResult(noReceiptData);
+  } catch(e) {
+    overlay.classList.remove('show');
+    alert('오류: ' + (e.message || '다시 시도해주세요'));
+  }
+}
+
+const COUNTRY_CURRENCY = { '오스트리아': 'EUR', '덴마크': 'DKK', '영국': 'GBP' };
+
+// ── 초기화 ──
+if (SCRIPT_URL) {
+  show('s-part');
+} else {
+  show('s-setup');
+}
+</script>
+</body>
+</html>
