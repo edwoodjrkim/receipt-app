@@ -937,6 +937,10 @@ function showResult(r) {
       <span class="r-label">결제수단</span>
       <span class="r-value"><span class="ctx-badge badge-payment">${r.payment || '—'}</span></span>
     </div>
+    <div class="result-row">
+      <span class="r-label">카테고리</span>
+      <span class="r-value">${r.category || '—'}</span>
+    </div>
     ${amountHtml}
     ${memoRow}
   `;
