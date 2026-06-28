@@ -839,7 +839,7 @@ async function sendReceipt() {
     txt.textContent = '번역 및 환율 계산 중...';
     const res1 = await callScript({ action: 'analyze', imageBase64: imageB64, mimeType: imageMime, country: state.country });
     txt.textContent = '구글 시트에 저장 중...';
-    const res2 = await callScript({ action: 'save', receipt: { ...res1.data, ...state } });
+    const res2 = await callScript({ action: 'save', receipt: { ...res1.data, ...state, imageBase64: imageB64, mimeType: imageMime } });
     overlay.classList.remove('show');
     showResult({ ...res1.data, ...state });
   } catch(e) {
@@ -925,22 +925,18 @@ function showResult(r) {
 
   card.innerHTML = `
     <div class="result-row">
-      <span class="r-label">날짜</span>
-      <span class="r-value">${r.date || '—'}</span>
+      <span class="r-label">번호</span>
+      <span class="r-value" style="font-weight:700;color:var(--accent)">${r.id || '—'}</span>
     </div>
     <div class="result-row">
       <span class="r-label">편·항목</span>
       <span class="r-value" style="display:flex;gap:6px;flex-wrap:wrap">${partBadge}${itemBadge}</span>
     </div>
-    ${countryRow}
-    <div class="result-row">
-      <span class="r-label">결제수단</span>
-      <span class="r-value"><span class="ctx-badge badge-payment">${r.payment || '—'}</span></span>
-    </div>
     <div class="result-row">
       <span class="r-label">카테고리</span>
       <span class="r-value">${r.category || '—'}</span>
     </div>
+    ${countryRow}
     ${amountHtml}
     ${memoRow}
   `;
