@@ -783,6 +783,7 @@ function skipMemo() {
 function updateCamContext() {
   const bar = document.getElementById('cam-context-bar');
   const countryChip = state.country ? `<span class="ctx-badge badge-country" style="font-size:12px;padding:3px 8px;">${state.country}</span>` : '';
+  const paymentChip = state.payment ? `<span class="ctx-badge badge-payment" style="font-size:12px;padding:3px 8px;">${state.payment}</span>` : '';
   const memoChip = state.memo ? `<span style="font-size:12px;color:rgba(255,255,255,0.45);">✏️ ${state.memo}</span>` : '';
   const partBadge = state.part === '4부 국내편'
     ? `<span class="ctx-badge badge-part4" style="font-size:12px;padding:3px 8px;">${state.part}</span>`
