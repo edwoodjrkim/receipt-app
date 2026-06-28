@@ -212,6 +212,7 @@ body {
   font-size: 14px; font-weight: 500; cursor: pointer; -webkit-appearance: none; margin-top: 10px;
 }
 .no-receipt-btn:active { background: rgba(255,100,80,0.1); }
+.badge-payment { background: #1a3328; color: #34d399; }
 
 /* ── 영수증 없음 입력 폼 ── */
 .nr-field-label {
@@ -441,6 +442,54 @@ input[type="date"].nr-field-input { color-scheme: dark; }
   </div>
 </div>
 
+<!-- ═══════════════════════════════ STEP 3.5: 결제수단 선택 ═══════════════════════════════ -->
+<div class="screen" id="s-payment">
+  <div class="select-screen">
+    <div class="topbar">
+      <button class="back-btn" id="payment-back-btn" onclick="paymentBack()">‹ 뒤로</button>
+      <h2>결제수단</h2>
+      <div style="width:48px"></div>
+    </div>
+    <div class="step-indicator">
+      <div class="step-dot done"></div>
+      <div class="step-dot done"></div>
+      <div class="step-dot done"></div>
+      <div class="step-dot active"></div>
+    </div>
+    <div class="select-body">
+      <div class="section-label">결제수단 선택</div>
+      <button class="select-card" onclick="selectPayment('법인카드')">
+        <div class="select-card-inner">
+          <div class="select-card-title">💳 법인카드</div>
+          <div class="select-card-sub">회사 법인카드로 결제</div>
+        </div>
+        <div class="select-card-arrow">›</div>
+      </button>
+      <button class="select-card" onclick="selectPayment('개인카드')">
+        <div class="select-card-inner">
+          <div class="select-card-title">💳 개인카드</div>
+          <div class="select-card-sub">개인 신용·체크카드로 결제</div>
+        </div>
+        <div class="select-card-arrow">›</div>
+      </button>
+      <button class="select-card" onclick="selectPayment('현금')">
+        <div class="select-card-inner">
+          <div class="select-card-title">💵 현금</div>
+          <div class="select-card-sub">법인 현금으로 결제</div>
+        </div>
+        <div class="select-card-arrow">›</div>
+      </button>
+      <button class="select-card" onclick="selectPayment('현금(개인)')">
+        <div class="select-card-inner">
+          <div class="select-card-title">💵 현금(개인)</div>
+          <div class="select-card-sub">개인 현금으로 결제</div>
+        </div>
+        <div class="select-card-arrow">›</div>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════════════════════ STEP 4: 메모 ═══════════════════════════════ -->
 <div class="screen" id="s-memo">
   <div class="select-screen">
@@ -632,7 +681,7 @@ input[type="date"].nr-field-input { color-scheme: dark; }
 <script>
 // ── 상태 ──
 let SCRIPT_URL = localStorage.getItem('rcpt_url2') || '';
-let state = { part: '', item: '', country: '', memo: '' };
+let state = { part: '', item: '', country: '', payment: '', memo: '' };
 let imageB64 = null, imageMime = 'image/jpeg';
 
 // ── 화면 전환 ──
@@ -680,7 +729,7 @@ function selectItem(item) {
   } else {
     state.country = '';
     updateMemoContext();
-    show('s-memo');
+    show('s-payment');
   }
 }
 
@@ -688,7 +737,7 @@ function selectItem(item) {
 function selectCountry(country) {
   state.country = country;
   updateMemoContext();
-  show('s-memo');
+  show('s-payment');
 }
 
 // ── STEP 4: 메모 ──
@@ -717,8 +766,7 @@ function updateCount() {
   c.className = 'memo-count' + (t.length >= 18 ? ' warn' : '');
 }
 function memoBack() {
-  const is5shoot = state.part === '5부 해외편' && state.item === '촬영진행비';
-  goBack(is5shoot ? 's-country' : 's-item');
+  goBack('s-payment');
 }
 function goCamera() {
   state.memo = document.getElementById('memoText').value.trim();
@@ -742,7 +790,7 @@ function updateCamContext() {
   const itemBadge = state.item === '기획진행비'
     ? `<span class="ctx-badge badge-plan" style="font-size:12px;padding:3px 8px;">${state.item}</span>`
     : `<span class="ctx-badge badge-shoot" style="font-size:12px;padding:3px 8px;">${state.item}</span>`;
-  bar.innerHTML = `${partBadge}${itemBadge}${countryChip}${memoChip}`;
+  bar.innerHTML = `${partBadge}${itemBadge}${countryChip}${paymentChip}${memoChip}`;
 }
 function openCamera() {
   const fi = document.getElementById('fileInput');
@@ -884,6 +932,10 @@ function showResult(r) {
       <span class="r-value" style="display:flex;gap:6px;flex-wrap:wrap">${partBadge}${itemBadge}</span>
     </div>
     ${countryRow}
+    <div class="result-row">
+      <span class="r-label">결제수단</span>
+      <span class="r-value"><span class="ctx-badge badge-payment">${r.payment || '—'}</span></span>
+    </div>
     ${amountHtml}
     ${memoRow}
   `;
@@ -896,7 +948,19 @@ function nextReceipt() {
   show('s-part');
 }
 function openSheet() { window.open('https://docs.google.com/spreadsheets', '_blank'); }
-function resetState() { state = { part:'', item:'', country:'', memo:'' }; imageB64 = null; }
+function resetState() { state = { part:'', item:'', country:'', payment:'', memo:'' }; imageB64 = null; }
+
+// ── 결제수단 선택 ──
+function selectPayment(payment) {
+  state.payment = payment;
+  updateMemoContext();
+  show('s-memo');
+}
+
+function paymentBack() {
+  const is5shoot = state.part === '5부 해외편' && state.item === '촬영진행비';
+  goBack(is5shoot ? 's-country' : 's-item');
+}
 
 // ── 영수증 없음 ──
 let noReceiptReason = '';
@@ -926,8 +990,10 @@ function goNoReceiptForm(reason) {
     ? `<span class="ctx-badge badge-plan">${state.item}</span>`
     : `<span class="ctx-badge badge-shoot">${state.item}</span>`;
   const countryChip = state.country ? `<span class="ctx-badge badge-country">${state.country}</span>` : '';
+  const paymentChip = state.payment ? `<span class="ctx-badge badge-payment">${state.payment}</span>` : '';
   const reasonChip = `<span style="font-size:12px;color:rgba(255,160,100,0.8);background:rgba(255,120,60,0.15);padding:2px 8px;border-radius:20px;font-weight:500;">🚫 ${reason}</span>`;
-  ctx.innerHTML = `<div class="memo-context-row" style="flex-wrap:wrap;gap:6px;">${partBadge}${itemBadge}${countryChip}${reasonChip}</div>`;
+  const paymentBadge = state.payment ? `<span class="ctx-badge badge-payment">${state.payment}</span>` : '';
+  ctx.innerHTML = `<div class="memo-context-row" style="flex-wrap:wrap;gap:6px;">${partBadge}${itemBadge}${countryChip}${paymentBadge}${reasonChip}</div>`;
 
   show('s-no-receipt-form');
 }
