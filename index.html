@@ -994,8 +994,9 @@ function goNoReceiptForm(reason) {
   const countryChip = state.country ? `<span class="ctx-badge badge-country">${state.country}</span>` : '';
   const paymentChip = state.payment ? `<span class="ctx-badge badge-payment">${state.payment}</span>` : '';
   const reasonChip = `<span style="font-size:12px;color:rgba(255,160,100,0.8);background:rgba(255,120,60,0.15);padding:2px 8px;border-radius:20px;font-weight:500;">🚫 ${reason}</span>`;
+  const countryChipNR = state.country ? `<span class="ctx-badge badge-country">${state.country}</span>` : '';
   const paymentBadge = state.payment ? `<span class="ctx-badge badge-payment">${state.payment}</span>` : '';
-  ctx.innerHTML = `<div class="memo-context-row" style="flex-wrap:wrap;gap:6px;">${partBadge}${itemBadge}${countryChip}${paymentBadge}${reasonChip}</div>`;
+  ctx.innerHTML = `<div class="memo-context-row" style="flex-wrap:wrap;gap:6px;">${partBadge}${itemBadge}${countryChipNR}${paymentBadge}${reasonChip}</div>`;
 
   show('s-no-receipt-form');
 }
