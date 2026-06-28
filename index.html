@@ -755,6 +755,7 @@ function updateMemoContext() {
     <div class="memo-context-row"><span class="ctx-label">편</span>${partBadge}</div>
     <div class="memo-context-row"><span class="ctx-label">항목</span>${itemBadge}</div>
     ${countryRow}
+    ${r.locationCountry || r.locationCity ? `<div class="result-row"><span class="r-label">실제위치</span><span class="r-value">${[r.locationCountry, r.locationCity].filter(Boolean).join(' ')}</span></div>` : ''}
   `;
   document.getElementById('memoText').value = '';
   document.getElementById('memoCount').textContent = '0/20';
